@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -103,6 +104,17 @@ func main() {
 				if errSend != nil {
 					fmt.Println(errSend)
 				}
+			}
+		}()
+
+		go func() {
+			// read sender reports here
+			for {
+				pkts, _, err := receiver.ReadRTCP()
+				if err != nil {
+					break
+				}
+				log.Printf("%v", pkts)
 			}
 		}()
 
