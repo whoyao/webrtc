@@ -35,6 +35,11 @@ func (f *fakeDepacketizer) IsPartitionHead(payload []byte) bool {
 		// the tests should be fixed to not assume the bug
 		return true
 	}
+
+	if len(payload) < 1 {
+		return false
+	}
+
 	for _, b := range f.headBytes {
 		if payload[0] == b {
 			return true
@@ -222,6 +227,26 @@ func TestSampleBuilder(t *testing.T) {
 			headBytes:        []byte{0x04},
 			maxLate:          50,
 			maxLateTimestamp: 2000,
+		},
+		{
+			// shamelessly stolen from webrtc-rs
+			message: "Sample builder should recognize padding packets",
+			packets: []*rtp.Packet{
+				{Header: rtp.Header{SequenceNumber: 5000, Timestamp: 1}, Payload: []byte{1}},
+				{Header: rtp.Header{SequenceNumber: 5001, Timestamp: 1}, Payload: []byte{2}},
+				{Header: rtp.Header{SequenceNumber: 5002, Timestamp: 1, Marker: true}, Payload: []byte{3}},
+				{Header: rtp.Header{SequenceNumber: 5003, Timestamp: 1}, Payload: []byte{}},
+				{Header: rtp.Header{SequenceNumber: 5004, Timestamp: 1}, Payload: []byte{}},
+				{Header: rtp.Header{SequenceNumber: 5005, Timestamp: 3}, Payload: []byte{1}},
+				{Header: rtp.Header{SequenceNumber: 5006, Timestamp: 3, Marker: true}, Payload: []byte{7}},
+				{Header: rtp.Header{SequenceNumber: 5007, Timestamp: 4}, Payload: []byte{1}},
+			},
+			withHeadChecker: true,
+			headBytes:       []byte{1},
+			samples: []*media.Sample{
+				{Data: []byte{1, 2, 3}, Duration: 0, PacketTimestamp: 1},
+			},
+			maxLate: 50,
 		},
 	}
 
