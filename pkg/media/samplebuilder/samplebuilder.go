@@ -35,8 +35,13 @@ type SampleBuilder struct {
 	// prepared contains the samples that have been processed to date
 	prepared sampleSequenceLocation
 
+	lastSampleTimestamp *uint32
+
 	// number of packets forced to be dropped
 	droppedPackets uint16
+
+	// number of padding packets detected and dropped (this will be a subset of `droppedPackets`)
+	paddingPackets uint16
 }
 
 // New constructs a new SampleBuilder.
@@ -185,6 +190,7 @@ const secondToNanoseconds = 1000000000
 // buildSample creates a sample from a valid collection of RTP Packets by
 // walking forwards building a sample if everything looks good clear and
 // update buffer+values
+// nolint: gocognit
 func (s *SampleBuilder) buildSample(purgingBuffers bool) *media.Sample {
 	if s.active.empty() {
 		s.active = s.filled
@@ -242,7 +248,17 @@ func (s *SampleBuilder) buildSample(purgingBuffers bool) *media.Sample {
 	// prior to decoding all the packets, check if this packet
 	// would end being disposed anyway
 	if !s.depacketizer.IsPartitionHead(s.buffer[consume.head].Payload) {
+		// libwebrtc may send empty padding packets to smooth out send rate. These packets do not carry any media payloads.
+		isPadding := false
+		for i := consume.head; i != consume.tail; i++ {
+			if s.lastSampleTimestamp != nil && *s.lastSampleTimestamp == s.buffer[i].Timestamp && len(s.buffer[i].Payload) == 0 {
+				isPadding = true
+			}
+		}
 		s.droppedPackets += consume.count()
+		if isPadding {
+			s.paddingPackets += consume.count()
+		}
 		s.purgeConsumedLocation(consume, true)
 		s.purgeConsumedBuffers()
 		return nil
@@ -264,9 +280,13 @@ func (s *SampleBuilder) buildSample(purgingBuffers bool) *media.Sample {
 		Duration:           time.Duration((float64(samples)/float64(s.sampleRate))*secondToNanoseconds) * time.Nanosecond,
 		PacketTimestamp:    sampleTimestamp,
 		PrevDroppedPackets: s.droppedPackets,
+		PrevPaddingPackets: s.paddingPackets,
 	}
 
 	s.droppedPackets = 0
+	s.paddingPackets = 0
+	s.lastSampleTimestamp = new(uint32)
+	*s.lastSampleTimestamp = sampleTimestamp
 
 	s.preparedSamples[s.prepared.tail] = sample
 	s.prepared.tail++

@@ -37,6 +37,7 @@ func (f *fakeDepacketizer) IsPartitionHead(payload []byte) bool {
 		return true
 	}
 
+	// skip padding
 	if len(payload) < 1 {
 		return false
 	}
@@ -233,21 +234,23 @@ func TestSampleBuilder(t *testing.T) {
 			// shamelessly stolen from webrtc-rs
 			message: "Sample builder should recognize padding packets",
 			packets: []*rtp.Packet{
-				{Header: rtp.Header{SequenceNumber: 5000, Timestamp: 1}, Payload: []byte{1}},
-				{Header: rtp.Header{SequenceNumber: 5001, Timestamp: 1}, Payload: []byte{2}},
-				{Header: rtp.Header{SequenceNumber: 5002, Timestamp: 1, Marker: true}, Payload: []byte{3}},
-				{Header: rtp.Header{SequenceNumber: 5003, Timestamp: 1}, Payload: []byte{}},
-				{Header: rtp.Header{SequenceNumber: 5004, Timestamp: 1}, Payload: []byte{}},
-				{Header: rtp.Header{SequenceNumber: 5005, Timestamp: 3}, Payload: []byte{1}},
-				{Header: rtp.Header{SequenceNumber: 5006, Timestamp: 3, Marker: true}, Payload: []byte{7}},
-				{Header: rtp.Header{SequenceNumber: 5007, Timestamp: 4}, Payload: []byte{1}},
+				{Header: rtp.Header{SequenceNumber: 5000, Timestamp: 1}, Payload: []byte{1}},               // 1st packet
+				{Header: rtp.Header{SequenceNumber: 5001, Timestamp: 1}, Payload: []byte{2}},               // 2nd packet
+				{Header: rtp.Header{SequenceNumber: 5002, Timestamp: 1, Marker: true}, Payload: []byte{3}}, // 3rd packet
+				{Header: rtp.Header{SequenceNumber: 5003, Timestamp: 1}, Payload: []byte{}},                // Padding packet 1
+				{Header: rtp.Header{SequenceNumber: 5004, Timestamp: 1}, Payload: []byte{}},                // Padding packet 2
+				{Header: rtp.Header{SequenceNumber: 5005, Timestamp: 3}, Payload: []byte{1}},               // 6th packet
+				{Header: rtp.Header{SequenceNumber: 5006, Timestamp: 3, Marker: true}, Payload: []byte{7}}, // 7th packet
+				{Header: rtp.Header{SequenceNumber: 5007, Timestamp: 4}, Payload: []byte{1}},               // 7th packet
 			},
 			withHeadChecker: true,
 			headBytes:       []byte{1},
 			samples: []*media.Sample{
-				{Data: []byte{1, 2, 3}, Duration: 0, PacketTimestamp: 1},
+				{Data: []byte{1, 2, 3}, Duration: 0, PacketTimestamp: 1, PrevDroppedPackets: 0}, // first sample
 			},
-			maxLate: 50,
+			maxLate:          50,
+			maxLateTimestamp: 2000,
+			extraPopAttempts: 1,
 		},
 		{
 			// shamelessly stolen from webrtc-rs
@@ -260,10 +263,10 @@ func TestSampleBuilder(t *testing.T) {
 				{Header: rtp.Header{SequenceNumber: 5004, Timestamp: 2, Marker: true}, Payload: []byte{1}}, // 3rd valid packet
 				{Header: rtp.Header{SequenceNumber: 5005, Timestamp: 3}, Payload: []byte{1}},               // 4th valid packet, start of next sample
 			},
-			withHeadChecker:  true,
-			headBytes: []byte{1},
+			withHeadChecker: true,
+			headBytes:       []byte{1},
 			samples: []*media.Sample{
-				{Data: []byte{1, 2}, Duration: 0, PacketTimestamp: 1, PrevDroppedPackets: 0},                                                             // 1st sample
+				{Data: []byte{1, 2}, Duration: 0, PacketTimestamp: 1, PrevDroppedPackets: 0}, // 1st sample
 			},
 			maxLate:          50,
 			maxLateTimestamp: 2000,
