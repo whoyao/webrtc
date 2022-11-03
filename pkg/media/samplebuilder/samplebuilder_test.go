@@ -14,6 +14,7 @@ type sampleBuilderTest struct {
 	message          string
 	packets          []*rtp.Packet
 	withHeadChecker  bool
+	extraPopAttempts int
 	headBytes        []byte
 	samples          []*media.Sample
 	maxLate          uint16
@@ -248,6 +249,26 @@ func TestSampleBuilder(t *testing.T) {
 			},
 			maxLate: 50,
 		},
+		{
+			// shamelessly stolen from webrtc-rs
+			message: "Sample builder should build a sample out of a packet that's both start and end following a run of padding packets",
+			packets: []*rtp.Packet{
+				{Header: rtp.Header{SequenceNumber: 5000, Timestamp: 1}, Payload: []byte{1}},               // 1st valid packet
+				{Header: rtp.Header{SequenceNumber: 5001, Timestamp: 1, Marker: true}, Payload: []byte{2}}, // 2nd valid packet
+				{Header: rtp.Header{SequenceNumber: 5002, Timestamp: 1}, Payload: []byte{}},                // 1st padding packet
+				{Header: rtp.Header{SequenceNumber: 5003, Timestamp: 1}, Payload: []byte{}},                // 2nd padding packet
+				{Header: rtp.Header{SequenceNumber: 5004, Timestamp: 2, Marker: true}, Payload: []byte{1}}, // 3rd valid packet
+				{Header: rtp.Header{SequenceNumber: 5005, Timestamp: 3}, Payload: []byte{1}},               // 4th valid packet, start of next sample
+			},
+			withHeadChecker:  true,
+			headBytes: []byte{1},
+			samples: []*media.Sample{
+				{Data: []byte{1, 2}, Duration: 0, PacketTimestamp: 1, PrevDroppedPackets: 0},                                                             // 1st sample
+			},
+			maxLate:          50,
+			maxLateTimestamp: 2000,
+			extraPopAttempts: 1,
+		},
 	}
 
 	t.Run("Pop", func(t *testing.T) {
@@ -273,6 +294,12 @@ func TestSampleBuilder(t *testing.T) {
 			}
 			for sample := s.Pop(); sample != nil; sample = s.Pop() {
 				samples = append(samples, sample)
+			}
+			for i := 0; i < t.extraPopAttempts; i++ {
+				// pop some more
+				for sample := s.Pop(); sample != nil; sample = s.Pop() {
+					samples = append(samples, sample)
+				}
 			}
 			assert.Equal(t.samples, samples, t.message)
 		}
