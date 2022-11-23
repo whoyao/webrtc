@@ -69,6 +69,8 @@ type SettingEngine struct {
 	LoggerFactory                             logging.LoggerFactory
 	iceTCPMux                                 ice.TCPMux
 	iceUDPMux                                 ice.UDPMux
+	iceUDPMuxSrflx                            ice.UniversalUDPMuxGroup
+	iceContinuousNomination                   bool
 	iceProxyDialer                            proxy.Dialer
 	disableMediaEngineCopy                    bool
 	srtpProtectionProfiles                    []dtls.SRTPProtectionProfile
@@ -178,9 +180,13 @@ func (e *SettingEngine) SetIPFilter(filter func(net.IP) bool) {
 // Two types of candidates are supported:
 //
 // ICECandidateTypeHost:
-//		The public IP address will be used for the host candidate in the SDP.
+//
+//	The public IP address will be used for the host candidate in the SDP.
+//
 // ICECandidateTypeSrflx:
-//		A server reflexive candidate with the given public IP address will be added
+//
+//	A server reflexive candidate with the given public IP address will be added
+//
 // to the SDP.
 //
 // Please note that if you choose ICECandidateTypeHost, then the private IP address
@@ -200,9 +206,12 @@ func (e *SettingEngine) SetNAT1To1IPs(ips []string, candidateType ICECandidateTy
 // may be useful when interacting with non-compliant clients or debugging issues.
 //
 // DTLSRoleActive:
-// 		Act as DTLS Client, send the ClientHello and starts the handshake
+//
+//	Act as DTLS Client, send the ClientHello and starts the handshake
+//
 // DTLSRolePassive:
-// 		Act as DTLS Server, wait for ClientHello
+//
+//	Act as DTLS Server, wait for ClientHello
 func (e *SettingEngine) SetAnsweringDTLSRole(role DTLSRole) error {
 	if role != DTLSRoleClient && role != DTLSRoleServer {
 		return errSettingEngineSetAnsweringDTLSRole
@@ -322,4 +331,12 @@ func (e *SettingEngine) SetDTLSRetransmissionInterval(interval time.Duration) {
 // Leave this 0 for the default maxReceiveBufferSize.
 func (e *SettingEngine) SetSCTPMaxReceiveBufferSize(maxReceiveBufferSize uint32) {
 	e.sctp.maxReceiveBufferSize = maxReceiveBufferSize
+}
+
+func (e *SettingEngine) SetMuxableICEUDPMuxSrflx(udpMuxSrflx ice.UniversalUDPMuxGroup) {
+	e.iceUDPMuxSrflx = udpMuxSrflx
+}
+
+func (e *SettingEngine) SetMuxableContinuousNomination(isEnabled bool) {
+	e.iceContinuousNomination = isEnabled
 }
