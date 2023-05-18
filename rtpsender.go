@@ -430,6 +430,10 @@ func (r *RTPSender) SetReadDeadlineSimulcast(deadline time.Time, rid string) err
 	return fmt.Errorf("%w: %s", errRTPSenderNoTrackForRID, rid)
 }
 
+func (r *RTPSender) SenderId() string {
+	return r.id
+}
+
 // hasSent tells if data has been ever sent for this instance
 func (r *RTPSender) hasSent() bool {
 	select {
