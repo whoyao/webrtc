@@ -10,8 +10,8 @@ import (
 
 	"github.com/pion/interceptor"
 	"github.com/pion/interceptor/pkg/intervalpli"
-	"github.com/pion/webrtc/v3"
-	"github.com/pion/webrtc/v3/examples/internal/signal"
+	"github.com/whoyao/webrtc/v3"
+	"github.com/whoyao/webrtc/v3/examples/internal/signal"
 )
 
 // nolint:gocognit

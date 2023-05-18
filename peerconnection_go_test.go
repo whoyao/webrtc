@@ -23,9 +23,9 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/transport/v2/test"
 	"github.com/pion/transport/v2/vnet"
-	"github.com/pion/webrtc/v3/internal/util"
-	"github.com/pion/webrtc/v3/pkg/rtcerr"
 	"github.com/stretchr/testify/assert"
+	"github.com/whoyao/webrtc/v3/internal/util"
+	"github.com/whoyao/webrtc/v3/pkg/rtcerr"
 )
 
 // newPair creates two new peer connections (an offerer and an answerer) using

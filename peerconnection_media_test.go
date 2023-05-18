@@ -21,9 +21,9 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/sdp/v3"
 	"github.com/pion/transport/v2/test"
-	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/whoyao/webrtc/v3/pkg/media"
 )
 
 var (
@@ -1340,7 +1340,7 @@ func TestPeerConnection_Simulcast(t *testing.T) {
 // Everytime we receieve a new SSRC we probe it and try to determine the proper way to handle it.
 // In most cases a Track explicitly declares a SSRC and a OnTrack is fired. In two cases we don't
 // know the SSRC ahead of time
-// * Undeclared SSRC in a single media section (https://github.com/pion/webrtc/issues/880)
+// * Undeclared SSRC in a single media section (https://github.com/whoyao/webrtc/issues/880)
 // * Simulcast
 //
 // The Undeclared SSRC processing code would run before Simulcast. If a Simulcast Offer/Answer only

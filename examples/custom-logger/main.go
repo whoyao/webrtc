@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/pion/logging"
-	"github.com/pion/webrtc/v3"
+	"github.com/whoyao/webrtc/v3"
 )
 
 // Everything below is the Pion WebRTC API! Thanks for using it ❤️.
